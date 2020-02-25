@@ -16,6 +16,9 @@ class TodoListViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        if let items = defaults.array(forKey: K.userDefaultKey) as? [ToDoItem] {
+            itemArray = items
+        }
     }
     
     @IBAction func addButtonPressed(_ sender: Any) {
@@ -27,7 +30,7 @@ class TodoListViewController: UITableViewController {
             if textField.text != "" {
                 toDoItem.title = textField.text!
                 self.itemArray.append(toDoItem)
-                //self.defaults.set(self.itemArray, forKey: "TodoItemList")
+                self.defaults.set(self.itemArray, forKey: K.userDefaultKey)
             }
             self.tableView.reloadData()
         }
