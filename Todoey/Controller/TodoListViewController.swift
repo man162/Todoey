@@ -7,32 +7,29 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
 
-    var itemArray = [ToDoItem]()
-
-    let defaults = UserDefaults()
-
+    var itemArray = [Item]()
+    let context = PersistenceService.context
     override func viewDidLoad() {
         super.viewDidLoad()
-        if let items = defaults.array(forKey: K.userDefaultKey) as? [ToDoItem] {
-            itemArray = items
-        }
+        loadItems()
     }
     
     @IBAction func addButtonPressed(_ sender: Any) {
 
-        var toDoItem = ToDoItem()
         var textField = UITextField()
         let alert = UIAlertController(title: "Add New Item", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             if textField.text != "" {
-                toDoItem.title = textField.text!
-                self.itemArray.append(toDoItem)
-                self.defaults.set(self.itemArray, forKey: K.userDefaultKey)
+                let newItem = Item(context: self.context)
+                newItem.title = textField.text!
+                newItem.done = false
+                self.itemArray.append(newItem)
+                self.saveItems()
             }
-            self.tableView.reloadData()
         }
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create new item"
@@ -42,6 +39,19 @@ class TodoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
 
+    func saveItems() {
+        PersistenceService.saveContext()
+        self.tableView.reloadData()
+    }
+
+    func loadItems() {
+        let fetchRequest: NSFetchRequest = Item.fetchRequest()
+        do {
+            itemArray = try context.fetch(fetchRequest)
+        } catch {
+            print("Error loading the data \(error)")
+        }
+    }
 }
 
 // MARK:- Table source
@@ -57,10 +67,9 @@ extension TodoListViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: K.identifier, for: indexPath)
         let item = itemArray[indexPath.row]
         cell.textLabel?.text = item.title
-        cell.accessoryType = item.completed ? .checkmark : .none
+        cell.accessoryType = item.done ? .checkmark : .none
         return cell
     }
-
 }
 
 // MARK:- TableView Delegate
@@ -69,7 +78,9 @@ extension TodoListViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 
-        itemArray[indexPath.row].completed = !itemArray[indexPath.row].completed
+        let item = itemArray[indexPath.row]
+        item.done = !item.done
+        saveItems()
         tableView.reloadData()
         tableView.deselectRow(at: indexPath, animated: true)
     }
